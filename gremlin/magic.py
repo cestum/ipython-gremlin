@@ -10,7 +10,6 @@ from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic,
 
 from gremlin import config, registry, utils
 
-
 @magics_class
 class GremlinMagic(Magics):
     """
@@ -92,6 +91,9 @@ class GremlinMagic(Magics):
         """Get the currently used connection object"""
         return registry.ConnectionRegistry.current
 
+    @line_magic('gremlin.draw_graph')
+    def drawgraph(self, line):
+        print(line)
 
 def close():
     """uh oh"""

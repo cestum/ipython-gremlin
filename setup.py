@@ -13,7 +13,9 @@ setup(
     packages=["gremlin"],
     install_requires=[
         "aiogremlin>=3.2.6",
-        "ipython>=5.3.0"
+        "ipython>=5.3.0",
+        "networkx",
+        "ipycytoscape"
     ],
     test_suite="tests",
     classifiers=[

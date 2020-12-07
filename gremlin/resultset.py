@@ -12,6 +12,7 @@ except ImportError:
 from gremlin.types import (
     gremlin_types, TypeClasses, Vertex, Edge, VertexProperty, Property, Path)
 
+from gremlin.draw_graph import draw_simple_graph
 
 class ResultSet(list):
 
@@ -142,7 +143,7 @@ class ResultSet(list):
             results = self._results
             if len(results) == 1:
                 # untested
-                if instance(results, dict):
+                if isinstance(results, dict):
                     results = itertools.chain.from_iterable(results.values())
             evaluated = self._evaluate(results)
             for (tp, tc), values in evaluated.items():
@@ -159,6 +160,79 @@ class ResultSet(list):
             raise RuntimeError('Unable to generate graph')
         return self._graph
 
+
+    def to_cytoscape(self, nodelabels = None, edgelabels = None, layout="cose", style={}):
+        """
+        Generates cytoscape widge based on ipycytoscape. 
+        """
+        gg_graph = self.get_graph()
+        #update node properties
+        if nodelabels:
+            nx.set_node_attributes(gg_graph, name='newlabel', values=nodelabels)
+        #TODO accept and set edge labels
+
+        #create cytoscape widges
+        gg_cytoscapeobj = ipycytoscape.CytoscapeWidget()
+        gg_cytoscapeobj.graph.add_graph_from_networkx(gg_graph)
+        #TODO accept style from args
+        gg_cytoscapeobj.set_style([{
+                            'selector': 'node',
+                            'css': {
+                                'background-color': '#11479e',
+                                'content': 'data(newlabel)'
+                                }
+                            },
+                            {
+                            'selector': 'node:parent',
+                            'css': {
+                                'background-opacity': 0.333
+                                }
+                            },
+                            {
+                                'selector': 'node[label = "concept"]',
+                                'style': {
+                                    'background-opacity': 0.43,
+                                    'background-color': 'red'
+                                    }
+                            },
+                            {
+                                'selector': 'node[label = "keyword"]',
+                                'style': {
+                                    'background-opacity': 0.1,
+                                    'background-color': 'green'
+                                    }
+                            },
+                            {
+                                'selector': 'node[label = "code"]',
+                                'style': {
+                                    'background-opacity': 0.1,
+                                    'background-color': 'blue'
+                                    }
+                            },        
+                            {
+                                'selector': 'edge',
+                                'style': {
+                                    'width': 4,
+                                    'content': 'data(type)',
+                                    'line-color': '#9dbaea',
+                                    'target-arrow-shape': 'triangle',
+                                    'target-arrow-color': '#9dbaea',
+                                    'curve-style': 'bezier'
+                                }
+                            }])
+        #TODO accept layout params kwargs
+        gg_cytoscapeobj.set_layout(name=layout, animate=False, nodeSpacing=5, edgeLengthVal=15, directed=True)    
+        return gg_cytoscapeobj        
+
+
+    def draw_graph(self, names_map , labels_map, node_type_attr='type',
+                      edge_label_attr='weight', show_edge_labels=True,
+                      label_attrs=['label'], k=None):
+            """
+            Renders a graph using networx graph layout 
+            """
+            draw_simple_graph(self.get_graph(),names_map, labels_map, node_type_attr,edge_label_attr, show_edge_labels,label_attrs, k)
+
     def _add_element(self, e):
         if isinstance(e, Vertex):
             self._add_vertex(e)
@@ -166,13 +240,14 @@ class ResultSet(list):
             self._add_edge(e)
 
     def _add_vertex(self, v):
-        self._graph.add_node(v.id, {'label': v.label})
+        self._graph.add_node(v.id, label=v.label)
 
     def _add_edge(self, e):
         self._add_vertex(e.outV)
         self._add_vertex(e.inV)
         # import ipdb; ipdb.set_trace()
-        self._graph.add_edge(e.outV.id, e.inV.id, e.id,
-                             id=e.id, label=e.label)
+        _eid = e.id["@value"]["relationId"]
+        self._graph.add_edge(e.outV.id, e.inV.id, _eid,id=_eid, label=e.label)
+
 
     graph = property(get_graph)
