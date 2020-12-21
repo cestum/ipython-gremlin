@@ -116,8 +116,7 @@ class ConnectionRegistry:
             cls.connections.pop(conn.alias)
             cls.connections[alias] = conn
             conn.alias = alias
-            print('Alias-- {} --created for database at {}'.format(
-                alias, conn.uri))
+            print('Alias-- {} --created for database at {}'.format(alias, conn.uri))
 
     @classmethod
     def set_current_connection(cls, descriptors, config):

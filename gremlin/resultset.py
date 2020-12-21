@@ -12,15 +12,20 @@ except ImportError:
 from gremlin.types import (
     gremlin_types, TypeClasses, Vertex, Edge, VertexProperty, Property, Path)
 
-from gremlin.draw_graph import draw_simple_graph
+from gremlin.networkx import draw_simple_graph
+from gremlin.cytoscape import draw_cytograph_graph
+from gremlin import config, registry, utils
+from gremlin_python.driver import request
 
 class ResultSet(list):
 
-    def __init__(self, results, traversal):
+    def __init__(self, results, traversal, aliases=None, conn=None):
         self._results = results
         self._traversal = traversal
         self._dataframe = None
         self._graph = None
+        self._aliases = aliases
+        self._conn = conn
         super().__init__(results)
 
     def __repr__(self):
@@ -158,71 +163,7 @@ class ResultSet(list):
                             self._add_element(e)
         if not len(self._graph):
             raise RuntimeError('Unable to generate graph')
-        return self._graph
-
-
-    def to_cytoscape(self, nodelabels = None, edgelabels = None, layout="cose", style={}):
-        """
-        Generates cytoscape widge based on ipycytoscape. 
-        """
-        gg_graph = self.get_graph()
-        #update node properties
-        if nodelabels:
-            nx.set_node_attributes(gg_graph, name='newlabel', values=nodelabels)
-        #TODO accept and set edge labels
-
-        #create cytoscape widges
-        gg_cytoscapeobj = ipycytoscape.CytoscapeWidget()
-        gg_cytoscapeobj.graph.add_graph_from_networkx(gg_graph)
-        #TODO accept style from args
-        gg_cytoscapeobj.set_style([{
-                            'selector': 'node',
-                            'css': {
-                                'background-color': '#11479e',
-                                'content': 'data(newlabel)'
-                                }
-                            },
-                            {
-                            'selector': 'node:parent',
-                            'css': {
-                                'background-opacity': 0.333
-                                }
-                            },
-                            {
-                                'selector': 'node[label = "concept"]',
-                                'style': {
-                                    'background-opacity': 0.43,
-                                    'background-color': 'red'
-                                    }
-                            },
-                            {
-                                'selector': 'node[label = "keyword"]',
-                                'style': {
-                                    'background-opacity': 0.1,
-                                    'background-color': 'green'
-                                    }
-                            },
-                            {
-                                'selector': 'node[label = "code"]',
-                                'style': {
-                                    'background-opacity': 0.1,
-                                    'background-color': 'blue'
-                                    }
-                            },        
-                            {
-                                'selector': 'edge',
-                                'style': {
-                                    'width': 4,
-                                    'content': 'data(type)',
-                                    'line-color': '#9dbaea',
-                                    'target-arrow-shape': 'triangle',
-                                    'target-arrow-color': '#9dbaea',
-                                    'curve-style': 'bezier'
-                                }
-                            }])
-        #TODO accept layout params kwargs
-        gg_cytoscapeobj.set_layout(name=layout, animate=False, nodeSpacing=5, edgeLengthVal=15, directed=True)    
-        return gg_cytoscapeobj        
+        return self._graph  
 
 
     def draw_graph(self, names_map , labels_map, node_type_attr='type',
@@ -232,6 +173,34 @@ class ResultSet(list):
             Renders a graph using networx graph layout 
             """
             draw_simple_graph(self.get_graph(),names_map, labels_map, node_type_attr,edge_label_attr, show_edge_labels,label_attrs, k)
+
+    def to_cytoscape(self, 
+        prepare_nodesdata_func=None, 
+        node_labels=['label'], 
+        styles=None, 
+        layout="cose",
+        **kwargs):
+
+        if not self._conn or not self._aliases:
+            print("No connection exists")
+            return
+
+        gg_graph = self.get_graph()
+        gg_nodes = [str(x) for x in gg_graph.nodes()]
+
+        #ugly...testing only
+        default_alias = list(self._aliases.values())[0]
+        get_node_labels_gremlin_message = default_alias + \
+             ".V(" + ','.join(gg_nodes) + " ).valueMap('" + "','".join(node_labels) + "').with(WithOptions.tokens)"
+
+        results = utils.submit(get_node_labels_gremlin_message,{},self._aliases, self._conn)
+
+        if prepare_nodesdata_func:
+            gg_graph = prepare_nodesdata_func(gg_graph, results)
+        
+        return draw_cytograph_graph(graph_data=gg_graph, style_data=styles, layout=layout)
+
+
 
     def _add_element(self, e):
         if isinstance(e, Vertex):

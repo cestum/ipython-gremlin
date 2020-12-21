@@ -39,10 +39,10 @@ def submit(gremlin, user_ns, aliases, conn):
     message = request.RequestMessage(
         processor='', op='eval',
         args={'gremlin': gremlin, 'aliases': aliases, 'bindings': bindings})
-    return asyncio.run_coroutine_threadsafe(_submit(conn, message), registry.LOOP).result()
+    return asyncio.run_coroutine_threadsafe(_submit(conn, message, aliases), registry.LOOP).result()
 
 
-async def _submit(conn, message):
+async def _submit(conn, message, aliases):
     result_set = await conn.write(message)
     results = await result_set.all()
-    return resultset.ResultSet(results, message)
+    return resultset.ResultSet(results, message, aliases=aliases, conn=conn)

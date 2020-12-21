@@ -9,6 +9,7 @@ from IPython.core.magic import (Magics, magics_class, line_magic, cell_magic,
 
 
 from gremlin import config, registry, utils
+from gremlin.cytoscape import draw_cytograph_graph
 
 @magics_class
 class GremlinMagic(Magics):
@@ -60,10 +61,38 @@ class GremlinMagic(Magics):
             connection_str = line
             script = cell
         user_ns = self.shell.user_ns
-        user_ns.update(local_ns)
+        # print(user_ns.keys())
+        bindings_key = {}
+            
+        for k,v in user_ns.items():
+            if not k.startswith("_"):
+                bindings_key[k] = v
+        # print("binding keys: ", len(user_ns.keys()), len(bindings_key.keys()))
+
+        bindings_key.update(local_ns)
         descriptors = utils.parse(connection_str)
         connection = registry.ConnectionRegistry.get(descriptors, self)
-        return utils.submit(script, user_ns, self.aliases, connection)
+        return utils.submit(script, bindings_key, self.aliases, connection)
+
+    # @cell_magic('gremlin.cytoscape')
+    # def to_cytoscape(self, line, cell=None, local_ns={}):  
+    #     """
+    #     Generates cytoscape widge based on ipycytoscape. 
+    #     """
+    #     print(line)
+    #     if len(line) > 0:
+    #         lines = line.split(" ")
+    #         linesmap = dict(l.split("=") for l in lines if '=' in l)
+    #         print(linesmap)
+        
+    #     options={}
+    #     user_ns = self.shell.user_ns
+    #     for k,v in linesmap.items():
+    #         options[k] = user_ns.get(k,v)
+
+    #     print(user_ns.get(""))
+    #     first_results = self.gremlin(options.get('connection',''), cell=cell, local_ns=local_ns)
+    #     return first_results.to_cytoscape()
 
     @line_magic('gremlin.close')
     def close(self, line):
