@@ -41,6 +41,21 @@ common_graph_style = [
     }
 ]
 
+def showhide_label(cytograph):
+    def callback(event):
+        if event['name'] != 'value':
+            return
+        #add gleaf class for
+        for node in cytograph.graph.nodes:
+            if node.data["label"]:
+                classes = set(node.classes.split(" "))
+                if event['new']:
+                    classes.add("label")
+                else:
+                    classes.remove("label")
+                node.classes = " ".join(classes)
+    return callback
+
 def highlight_leaf(cytograph):
     def callback(event):
         if event['name'] != 'value':
@@ -172,34 +187,56 @@ def set_layout(cytograph, options_widget):
 
 
 
-def draw_cytograph_graph(graph_data, style_data=common_graph_style, layout="cose", **kwargs):
+def draw_cytograph_graph(graph_data, style_data=common_graph_style, layout="cose", clusters=[], **kwargs):
     ipython_cytoscapeobj = ipycytoscape.CytoscapeWidget()
     ipython_cytoscapeobj.graph.add_graph_from_networkx(graph_data)
 #     ipython_cytoscapeobj.set_tooltip_source('label')
     ipython_cytoscapeobj.set_style(style_data)
 
-    ipython_cytoscapeobj.set_layout(name=layout, animate=False, **kwargs)    
+    ipython_cytoscapeobj.set_layout(name=layout, animate=False, **kwargs)   
     #show leaf button
-    btn = widgets.ToggleButton(
+    btn1 = widgets.Checkbox(
+        value=False,
+        description="Show Label", 
+        disabled=False,
+    )
+    btn1.observe(showhide_label(ipython_cytoscapeobj)) 
+    #show leaf button
+    btn = widgets.Checkbox(
         value=False,
         description="Highlight leaf", 
         disabled=False,
-        button_style='success',
-        icon='check'
     )
     btn.observe(highlight_leaf(ipython_cytoscapeobj))
 
     #show layout
     layout_choice_widget = widgets.Dropdown(
-        options=['cola', 'concentric', 'grid', 'breadthfirst', 'cose', 'klay', 'dagre'], 
+        options=['cola', 'concentric', 'grid', 'breadthfirst', 'cose', 'klay', 'dagre','circle'], 
         description='Layout',
         value=layout
     )
 
+    top_row = widgets.HBox([btn1, btn, layout_choice_widget])
+    #cluster coloring?
+    # middle_row_childs = []
+    # for c in clusters:
+    #     w1 = widgets.Dropdown(
+    #         options=[c.elements],
+    #         value=2,
+    #         description='Number:',
+    #     )
+    #     w2 = widgets.ColorPicker(
+    #         concise=True,
+    #         description="",
+    #         value=c.color,
+    #         disabled=False
+    #     )
+    #     middle_row_childs.append(widgets.HBox([w1,w2]))
+    # middle_row = widgets.HBox(middle_row_childs)
+
     bottom_row = widgets.HBox([])
     layout_cb = set_layout(ipython_cytoscapeobj, bottom_row)
     layout_choice_widget.observe(layout_cb)
-    top_row = widgets.HBox([btn, layout_choice_widget])
     #initializes layout
     layout_cb({
         "name":"value",

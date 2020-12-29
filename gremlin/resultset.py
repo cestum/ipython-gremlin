@@ -198,7 +198,7 @@ class ResultSet(list):
         if prepare_nodesdata_func:
             gg_graph = prepare_nodesdata_func(gg_graph, results)
         
-        return draw_cytograph_graph(graph_data=gg_graph, style_data=styles, layout=layout)
+        return draw_cytograph_graph(graph_data=gg_graph, style_data=styles, layout=layout, **kwargs)
 
 
 
