@@ -211,7 +211,7 @@ def draw_cytograph_graph(graph_data, style_data=common_graph_style, layout="cose
 
     #show layout
     layout_choice_widget = widgets.Dropdown(
-        options=['cola', 'concentric', 'grid', 'breadthfirst', 'cose', 'klay', 'dagre','circle'], 
+        options=['cola', 'concentric', 'grid', 'breadthfirst', 'cose', 'klay', 'dagre','circle', 'fcose', 'avsdf', 'spread', 'euler', 'cise'], 
         description='Layout',
         value=layout
     )
