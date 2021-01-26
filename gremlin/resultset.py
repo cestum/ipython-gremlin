@@ -186,8 +186,9 @@ class ResultSet(list):
             return
 
         gg_graph = self.get_graph()
-        gg_nodes = [str(x) for x in gg_graph.nodes()]
+        gg_nodes = ['"{0}"'.format(x) for x in gg_graph.nodes()]
 
+        # ','.join('"{0}"'.format(w) for w in ['426056', '839712', '364752', '5877792'])
         #ugly...testing only
         default_alias = list(self._aliases.values())[0]
         get_node_labels_gremlin_message = default_alias + \
@@ -215,7 +216,10 @@ class ResultSet(list):
         self._add_vertex(e.outV)
         self._add_vertex(e.inV)
         # import ipdb; ipdb.set_trace()
-        _eid = e.id["@value"]["relationId"]
+        if isinstance(e.id, dict):
+            _eid = e.id["@value"]["relationId"]
+        else:
+            _eid = e.id
         self._graph.add_edge(e.outV.id, e.inV.id, _eid,id=_eid, label=e.label)
 
 

@@ -67,9 +67,8 @@ class GremlinMagic(Magics):
         for k,v in user_ns.items():
             if not k.startswith("_"):
                 bindings_key[k] = v
-        # print("binding keys: ", len(user_ns.keys()), len(bindings_key.keys()))
 
-        bindings_key.update(local_ns)
+        # bindings_key.update(local_ns)        
         descriptors = utils.parse(connection_str)
         connection = registry.ConnectionRegistry.get(descriptors, self)
         return utils.submit(script, bindings_key, self.aliases, connection)
